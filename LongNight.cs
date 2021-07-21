@@ -56,40 +56,53 @@ namespace Plugin
                 isInit = true;
                 Console.WriteLine("永夜模式：{0},  循环天数：{1}天", nightEnable ? "已开启":"已关闭", nightTotalDays);
             }
-            
+
             if(!nightEnable)
                 return;
 
+            // 50460 18:31
+            // 50700  18:35
+            double startTik = 50460;
+            double endTik = 50700;
+            if(  Main.time>=startTik && Main.time<=endTik )
+            {
+                TSPlayer.All.SendInfoMessage("『 永夜 · 其一 』" );
+                return;
+            }
+
             // 31800    GetTime("04:20");
-            // 32100    GetTime("04:20");
+            // 32100    GetTime("04:25");
             // 32340    GetTime("04:29");
-            double startTik = 32100;
-            double endTik = 32340;
+            // 16200    午夜
+            startTik = 32100;
+            endTik = 32340;
             if(  Main.time>=startTik && Main.time<=endTik )
             {
                 // Console.WriteLine("startTik:{0}, endTik:{1}, currentTime:{2}", startTik, endTik, Main.time);
 
                 if(nightRemainDays>1){
-                    Console.WriteLine("永夜模式：{0},  {1}/{2}", nightEnable ? "已开启":"已关闭", nightRemainDays, nightTotalDays);
                     nightRemainDays --;
-                    // bool isBloodMoon = Main.bloodMoon;
 
                     // 改变月相
                     int moon =Main.moonPhase >=7 ? 0: Main.moonPhase+1;
                     Main.moonPhase = moon;
-                    Console.WriteLine("月相：{0}", moon);
+                    Console.WriteLine("月相：{0}", _moonPhases.Keys.ElementAt(moon));
+
+                    // 改变渔夫任务
+                    Main.AnglerQuestSwap();
+                    // Console.WriteLine("渔夫任务：{0}, {1}", Main.anglerQuest, Main.anglerQuestItemNetIDs[Main.anglerQuest]);
 
                     // 重置时间到晚上
                     // TSPlayer.Server.SetTime(false, 16200.0);
                     TSPlayer.Server.SetTime(false, 0.0);
-                    TSPlayer.All.SendInfoMessage("鵺晚仍将继续 {0}/{1}", nightRemainDays, nightTotalDays);
+                    TSPlayer.All.SendInfoMessage("『 永夜 · 其{0} 』", _chNum.Keys.ElementAt(nightRemainDays-1) );
+                    Console.WriteLine("永夜模式：{0},  {1}/{2}  『 永夜 · 其{3} 』", nightEnable ? "已开启":"已关闭", nightRemainDays, nightTotalDays, _chNum.Keys.ElementAt(nightRemainDays-1) );
                 } else {
                     nightRemainDays = nightTotalDays-1;
                     TSPlayer.Server.SetTime(true, 0);
-                    TSPlayer.All.SendInfoMessage("现已进入白天");
-                    Console.WriteLine("永夜模式：{0},  循环天数：{1}天，现已进入白天", nightEnable ? "已开启":"已关闭", nightTotalDays);
+                    TSPlayer.All.SendInfoMessage("『 永夜 · 终章 』");
+                    Console.WriteLine("永夜模式：{0},  循环天数：{1}天,  『 永夜 · 终章 』", nightEnable ? "已开启":"已关闭", nightTotalDays);
                 }
-
             }
         }
 
@@ -101,6 +114,8 @@ namespace Plugin
                 return;
             }
 
+
+            int days = 0;
             switch (args.Parameters[0].ToLowerInvariant())
             {
                 default:
@@ -117,7 +132,7 @@ namespace Plugin
 
                 case "true":
                     nightEnable = true;
-                    args.Player.SendInfoMessage("永夜模式 已开启");
+                    args.Player.SendSuccessMessage("永夜模式 已开启");
                     break;
 
                 case "false":
@@ -127,15 +142,18 @@ namespace Plugin
 
                 case "info":
                     args.Player.SendInfoMessage("永夜模式：{0}", nightEnable ? "已开启":"已关闭");
-                    args.Player.SendInfoMessage("永夜循环天数：{0}", nightTotalDays);
-                    args.Player.SendInfoMessage("永夜剩余天数：{0}", nightRemainDays);
+                    args.Player.SendInfoMessage("剩余天数：{0}", nightRemainDays);
+                    args.Player.SendInfoMessage("循环天数：{0}", nightTotalDays);
+                    args.Player.SendInfoMessage("提示文字：『 永夜 · 其{0} 』", _chNum.Keys.ElementAt(nightRemainDays-1));
+                    args.Player.SendInfoMessage("月相：{0}", _moonPhases.Keys.ElementAt(Main.moonPhase));
                     break;
 
                 case "total":
                     if(args.Parameters.Count >1){
-                        int days = 3;
+                        days = 3;
                         if( int.TryParse(args.Parameters[1], out days)){
                             nightTotalDays = days;
+                            args.Player.SendSuccessMessage("永夜循环天数 已改为 {0} 天", days);
                         } else{
                             args.Player.SendErrorMessage("请输入正确的天数");
                         }
@@ -146,9 +164,10 @@ namespace Plugin
 
                 case "remain":
                     if(args.Parameters.Count >1){
-                        int days = 3;
+                        days = 3;
                         if( int.TryParse(args.Parameters[1], out days)){
                             nightRemainDays = days;
+                            args.Player.SendSuccessMessage("永夜剩余天数 已改为 {0} 天", days);
                         } else{
                             args.Player.SendErrorMessage("请输入正确的天数");
                         }
@@ -159,6 +178,29 @@ namespace Plugin
 
             }
         }
+        private Dictionary<string, int> _moonPhases = new Dictionary<string, int>
+        {
+            { "满月", 1 },
+            { "亏凸月", 2 },
+            { "下弦月", 3 },
+            { "残月", 4 },
+            { "新月", 5 },
+            { "娥眉月", 6 },
+            { "上弦月", 7 },
+            { "盈凸月", 8 }
+        };
+
+        private  Dictionary<string, int> _chNum = new Dictionary<string, int>
+        {
+            { "八", 8 },
+            { "七", 7 },
+            { "六", 6 },
+            { "五", 5 },
+            { "四", 4 },
+            { "三", 3 },
+            { "二", 2 },
+            { "一", 1 },
+        };
 
         private double GetTime(String time_str="18:30"){
             string[] array = time_str.Split(':');

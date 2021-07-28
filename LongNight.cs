@@ -48,38 +48,26 @@ namespace Plugin
 
         private void OnUpdate(EventArgs args)
         {
-            if (Main.dayTime)
-                return;
-
             if(!isFirstUpdate){
                 isFirstUpdate = true;
                 Console.WriteLine("永夜模式：{0},  夜晚总数：{1}天", nightEnable ? "已开启":"已关闭", nightTotal);
             }
 
+            if (Main.dayTime)
+                return;
+
             if(!nightEnable)
                 return;
 
-
-            // 50460 18:31
-            // 50700  18:35
-            double startTik = 50460;
-            double endTik = 50700;
-            if(  Main.time>=startTik && Main.time<=endTik )
-            {
-                TSPlayer.All.SendInfoMessage("『 永夜 · 其{0} 』", GetZhNum(nightCurrent+1) );
-                return;
-            }
 
             // 31800    GetTime("04:20");
             // 32100    GetTime("04:25");
             // 32340    GetTime("04:29");
             // 16200    午夜
-            startTik = 32100;
-            endTik = 32340;
+            double startTik = 32100;
+            double endTik = 32340;
             if(  Main.time>=startTik && Main.time<=endTik )
             {
-                // Console.WriteLine("startTik:{0}, endTik:{1}, currentTime:{2}", startTik, endTik, Main.time);
-
                 if(nightCurrent<nightTotal){
                     nightCurrent ++;
 
@@ -92,11 +80,12 @@ namespace Plugin
 
                     // 重置时间到晚上
                     TSPlayer.Server.SetTime(false, 0.0);
+                    TSPlayer.All.SendInfoMessage("『 永夜 · 其{0} 』", GetZhNum(nightCurrent) );
+                    Console.WriteLine("永夜模式：{0},  夜晚总数：{1}天", nightEnable ? "已开启":"已关闭", nightTotal);
                 } else {
                     nightCurrent = 0;
                     TSPlayer.Server.SetTime(true, 0);
                     TSPlayer.All.SendInfoMessage("『 永夜 · 终章 』");
-                    Console.WriteLine("永夜模式：{0},  循环天数：{1}天,  『 永夜 · 终章 』", nightEnable ? "已开启":"已关闭", nightTotal);
                 }
             }
         }
@@ -142,11 +131,12 @@ namespace Plugin
                     string msg =  GetMoon(Main.moonPhase);
                     var itemID = Main.anglerQuestItemNetIDs[Main.anglerQuest].ToString();
                     List<Item> matchedItems = TShock.Utils.GetItemByIdOrName(itemID);
-                    if (matchedItems.Count == 0)
+                    if (matchedItems.Count > 0)
                     {
-                        msg += ", " + matchedItems[1];
+                        msg += ", " + matchedItems[0].Name;
                     }
                     args.Player.SendInfoMessage("附加信息：{0}",msg);
+                    Console.WriteLine("tik：{0}", Main.time);
                     break;
 
                 case "total":
@@ -190,7 +180,7 @@ namespace Plugin
 
         private String  GetZhNum(int index){
             String[] arr = new string[] {"一", "二", "三", "四", "五", "六", "七", "八", "九", "十"};
-            if(index==-1 || index+1>=arr.Length)
+            if(index==-1 || index+1>arr.Length)
                 return (index+1).ToString();
 
             return arr[index];
@@ -198,7 +188,7 @@ namespace Plugin
 
         private String  GetMoon(int index){
             String[] arr = new string[] {"满月", "亏凸月", "下弦月", "残月", "新月", "娥眉月", "上弦月", "盈凸月"};
-            if (index==-1 || index+1>=arr.Length)
+            if (index==-1 || index+1> arr.Length)
                 return "未知";
 
             return arr[index];
